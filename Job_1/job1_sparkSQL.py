@@ -85,6 +85,6 @@ df_list = df_result.groupBy("ticker", "name").agg(
 
 # Mostra il risultato
 df_list.show(truncate=False)
-df_list.write.csv("/home/paleo/BigData/2Proj/Dataset/Job1_spark/job1_spark.csv")
+df_list.write.mode('overwrite').csv("/home/paleo/BigData/2Proj/Dataset/Job1_spark")
 # Termina la sessione Spark
 spark.stop()
