@@ -18,6 +18,8 @@ merged_df.drop(['exchange', 'adj_close'], axis=1, inplace=True)
 print(merged_df['low'].head(10))
 
 merged_df['name'] = merged_df['name'].str.replace(',', ' ')
+merged_df['industry'] = merged_df['industry'].str.replace(',', ' ')
+merged_df['sector'] = merged_df['sector'].str.replace(',', ' ')
 merged_df.to_csv('../Dataset/out.csv')
 
 print(merged_df.info())
