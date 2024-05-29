@@ -15,7 +15,7 @@ ROW FORMAT DELIMITED
 FIELDS TERMINATED BY ',';
 
 -- Load data into Hive table
-LOAD DATA LOCAL INPATH '/home/paleo/BigData/2Proj/Dataset/out.csv' INTO TABLE sd1;
+LOAD DATA LOCAL INPATH 'out_50.csv' INTO TABLE sd1;
 
 -- Query per generare le statistiche per ciascuna azione
 CREATE TEMPORARY TABLE temp_table AS

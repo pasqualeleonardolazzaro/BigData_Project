@@ -36,10 +36,8 @@ custom_schema = StructType([
 # Carica il dataset in un DataFrame Spark
 dfn = spark.read.csv(input_filepath, schema=custom_schema).cache()
 
-# Sample about 10% of the data randomly without replacement
-df = dfn.sample(False, 0.2)
 
-df = df.withColumn("date", col("date").cast("date"))  # Ensure date is DateType
+df = dfn.withColumn("date", col("date").cast("date"))  # Ensure date is DateType
 
 # Define window specification
 year_window = Window.partitionBy("ticker", year("date")).orderBy("date").rowsBetween(Window.unboundedPreceding, Window.unboundedFollowing)
@@ -50,9 +48,11 @@ annual_changes = df.withColumn("year", year("date")) \
     .withColumn("first_close", first("close").over(year_window)) \
     .withColumn("last_close", last("close").over(year_window)) \
     .withColumn("percent_change",
-                (col("last_close").cast("double") - col("first_close").cast("double")) / col("first_close").cast("double") * 100) \
+                ((col("last_close").cast("double") - col("first_close").cast("double")) / col("first_close").cast("double")) * 100) \
     .select("ticker", "name", "year", "percent_change")
 
+# Optionally, convert the percent change to integer if needed
+annual_changes = annual_changes.withColumn("percent_change", col("percent_change").cast("int"))
 annual_changes.createOrReplaceTempView("AnnualPercentChange")
 
 # Define a query to find three-year trends
@@ -83,12 +83,18 @@ FROM
     ThreeYearTrends
 GROUP BY
     trends
+HAVING
+    SIZE(companies) > 1
 """
 final_result = spark.sql(final_result_query)
 # Show results
 final_result.show(truncate=False)
 
+from pyspark.sql.functions import array_join
 
-final_result.write.mode('overwrite').csv("/home/paleo/BigData/2Proj/Dataset/Job2_spark", header=True)
+# Assuming 'companies' is the column with the array of strings
+final_result = final_result.withColumn("companies", array_join(col("companies"), ", "))
+
+final_result.write.mode('overwrite').csv("/home/paleo/BigData/2Proj/Dataset/Job3_spark20", header=True)
 
 spark.stop()

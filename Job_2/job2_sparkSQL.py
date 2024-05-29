@@ -46,7 +46,9 @@ final_df = spark.sql("""
             industry,
             sector,
             year(date) AS year,
-            (LAST_VALUE(close) OVER w - FIRST_VALUE(close) OVER w) / FIRST_VALUE(close) OVER w * 100 AS percent_change
+            (LAST_VALUE(close) OVER w - FIRST_VALUE(close) OVER w) / FIRST_VALUE(close) OVER w * 100 AS percent_change,
+            LAST_VALUE(close) OVER w as last_close,
+            FIRST_VALUE(close) OVER w as first_close
         FROM
             stock_data
         WINDOW w AS (PARTITION BY ticker, industry, year(date) ORDER BY date RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)
@@ -56,7 +58,7 @@ final_df = spark.sql("""
             industry,
             sector,
             year,
-            AVG(percent_change) AS avg_percent_change,
+            ((SUM(last_close)-SUM(first_close))/SUM(first_close))*100 AS avg_percent_change,
             MAX(percent_change) AS max_percent_change
         FROM
             PriceChanges

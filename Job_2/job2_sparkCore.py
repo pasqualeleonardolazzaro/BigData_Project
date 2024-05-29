@@ -88,7 +88,9 @@ def calculate_stats(record):
         'percentage_change': percentage_change,
         'volume': value['total_volume'],
         'ticker': ticker,
-        'sector': sector
+        'sector': sector,
+        'first_close': first_close,
+        'last_close': last_close
     })
 
 
@@ -107,7 +109,8 @@ def reduce_func_2(a, b):
         ticker_maxPercentage = a['ticker_maxPercentage']
     else:
         ticker_maxPercentage = b['ticker_maxPercentage']
-    tot_percentage = a['tot_percentage'] + b['tot_percentage']
+    tot_last_close = a['tot_last_close'] + b['tot_last_close']
+    tot_first_close = a['tot_first_close'] + b['tot_first_close']
     count = a['count'] + b['count']
     sector = a['sector']
     return {
@@ -115,7 +118,8 @@ def reduce_func_2(a, b):
         'ticker_maxVolume': ticker_maxVolume,
         'max_percentage': max_percentage,
         'ticker_maxPercentage': ticker_maxPercentage,
-        'tot_percentage': tot_percentage,
+        'tot_last_close': tot_last_close,
+        'tot_first_close': tot_first_close,
         'count': count,
         'sector': sector
     }
@@ -126,7 +130,8 @@ mapped_data_industry = grouped_data_industry.mapValues(lambda x: {
     'ticker_maxVolume': x['ticker'],
     'max_percentage': x['percentage_change'],
     'ticker_maxPercentage': x['ticker'],
-    'tot_percentage': x['percentage_change'],
+    'tot_last_close': x['last_close'],
+    'tot_first_close': x['first_close'],
     'count': 1,
     'sector': x['sector']
 })
@@ -140,9 +145,10 @@ def calculate_stats2(record):
     ticker_maxVolume = value['ticker_maxVolume']
     max_percentage = value['max_percentage']
     ticker_maxPercentage = value['ticker_maxPercentage']
-    tot_percentage = value['tot_percentage']
+    tot_last_close = value['tot_last_close']
+    tot_first_close = value['tot_first_close']
     count = value['count']
-    percentage_change_avg = tot_percentage/count
+    percentage_change_avg =((tot_last_close-tot_first_close)/tot_first_close)*100
     sector = value['sector']
     return (key[0], key[1], {
         'sector': sector,

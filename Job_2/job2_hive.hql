@@ -19,18 +19,28 @@ LOAD DATA LOCAL INPATH '/home/paleo/BigData/2Proj/Dataset/out.csv' INTO TABLE sd
 
 
 -- Calcolo della variazione percentuale per ciascuna azione per anno e industria
-CREATE TEMPORARY TABLE IndustryYearlyChange AS
+CREATE TEMPORARY TABLE IndustryYearlyChange0 AS
 SELECT
     industry,
     sector,
     ticker,
     YEAR(`date`) AS year,
-    (LAST_VALUE(close) OVER (PARTITION BY ticker, YEAR(`date`) ORDER BY `date` ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) -
+    LAST_VALUE(close) OVER (PARTITION BY ticker, YEAR(`date`) ORDER BY `date` ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) as last_close,
+    FIRST_VALUE(close) OVER (PARTITION BY ticker, YEAR(`date`) ORDER BY `date` ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) as first_close,
+    ((LAST_VALUE(close) OVER (PARTITION BY ticker, YEAR(`date`) ORDER BY `date` ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) -
      FIRST_VALUE(close) OVER (PARTITION BY ticker, YEAR(`date`) ORDER BY `date` ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)) /
-     FIRST_VALUE(close) OVER (PARTITION BY ticker, YEAR(`date`) ORDER BY `date` ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) * 100 AS percentage_change
+     FIRST_VALUE(close) OVER (PARTITION BY ticker, YEAR(`date`) ORDER BY `date` ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)) * 100 AS percentage_change
 FROM
     sd1;
 
+CREATE TEMPORARY TABLE IndustryYearlyChange AS
+SELECT
+    industry,
+    year,
+    ((SUM(last_close)-SUM(first_close))/SUM(first_close))*100 as percentage_industry
+FROM
+    IndustryYearlyChange0
+GROUP BY industry, year;
 -- Calcolo dell'azione con il maggiore incremento percentuale per industria per anno
 CREATE TEMPORARY TABLE MaxIncreaseAction AS
 SELECT
@@ -41,7 +51,7 @@ SELECT
     percentage_change,
     RANK() OVER (PARTITION BY industry, year ORDER BY percentage_change DESC) AS rank_increase
 FROM
-    IndustryYearlyChange;
+    IndustryYearlyChange0;
 
 -- Calcolo dell'azione con il maggiore volume di transazioni per industria per anno
 CREATE TEMPORARY TABLE MaxVolumeAction AS
@@ -63,31 +73,34 @@ GROUP BY
 -- Combinazione delle informazioni in un unico report
 CREATE TEMPORARY TABLE Final AS
 SELECT
-    a.industry,
-    a.sector,
-    a.year,
-    AVG(a.percentage_change) AS avg_percentage_change,
+    b.industry,
+    b.sector,
+    b.year,
+    d.percentage_industry as percentage_industry ,
     b.ticker AS max_increase_ticker,
     b.percentage_change AS max_increase_percentage,
     c.ticker AS max_volume_ticker,
     c.total_volume AS max_volume
+
 FROM
-    IndustryYearlyChange a
+    MaxIncreaseAction b
 JOIN
-    MaxIncreaseAction b ON a.industry = b.industry AND a.year = b.year AND b.rank_increase = 1
+    MaxVolumeAction c ON b.industry = c.industry AND b.year = c.year AND c.rank_volume = 1
 JOIN
-    MaxVolumeAction c ON a.industry = c.industry AND a.year = c.year AND c.rank_volume = 1
+    IndustryYearlyChange d ON b.industry = d.industry AND b.year = d.year
+WHERE  b.rank_increase = 1
 GROUP BY
-    a.industry,
-    a.sector,
-    a.year,
+    b.industry,
+    b.sector,
+    b.year,
     b.ticker,
+    d.percentage_industry,
     b.percentage_change,
     c.ticker,
     c.total_volume
 ORDER BY
-    a.sector,
-    avg_percentage_change DESC;
+    b.sector,
+    d.percentage_industry DESC;
 
 
 INSERT OVERWRITE LOCAL DIRECTORY '/home/paleo/BigData/2Proj/Dataset/Job2_hive'
