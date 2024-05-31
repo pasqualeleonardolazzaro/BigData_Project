@@ -30,12 +30,12 @@ for (sector, industry, year), values in data.items():
     max_volume = -float('inf')
     max_volume_ticker = None
     ticker_close_prices = defaultdict(list)
-    ticker_tot_volume = {}
+    ticker_tot_volume = defaultdict(list)
 
     for value in values:
         ticker, close, volume, date = value
         ticker_close_prices[ticker].append((date, close))
-        ticker_tot_volume[ticker] = ticker_tot_volume[ticker] + volume
+        ticker_tot_volume[ticker].append(volume)
 
 
     for ticker, close_prices in ticker_close_prices.items():
@@ -54,7 +54,8 @@ for (sector, industry, year), values in data.items():
             industry_first_close_sum[ticker] = first_close
         industry_last_close_sum[ticker] = last_close
 
-    for ticker, tot_volume in ticker_tot_volume.items():
+    for ticker, volumes in ticker_tot_volume.items():
+        tot_volume = sum(volumes)
         if tot_volume > max_volume:
             max_volume = tot_volume
             max_volume_ticker = (ticker, tot_volume)
