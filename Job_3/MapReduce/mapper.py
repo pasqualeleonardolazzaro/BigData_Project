@@ -1,43 +1,42 @@
+#!/usr/bin/env python3
 import sys
+import csv
+from collections import defaultdict
 
 
-# Dictionary to hold data for each ticker and year
-data = {}
-
-for line in sys.stdin:
-    line = line.strip()
-    parts = line.split(',')
-    if len(parts) < 7:
-        continue  # Skip malformed lines
-
-    ticker = parts[1]
-    date = parts[2]
+def parse_row(row):
+    fields = row.strip().split(',')
     try:
-        close_price = float(parts[6])
+        return {
+            'ticker': fields[1],
+            'date': fields[10],
+            'close': float(fields[6]),
+            'name': fields[2],
+            'year': int(fields[10][:4])
+        }
     except ValueError:
-        continue  # Skip lines where close price is not a number
+        return None
 
-    year = int(date[:4])
-    if year < 2000:
-        continue  # Filter out data before the year 2000
 
-    # Key by ticker and year
-    key = (ticker, year)
+data = defaultdict(lambda: {'close_prices': [], 'name': ''})
 
-    if key not in data:
-        # Store both the first and last close prices and dates
-        data[key] = {'first_date': date, 'last_date': date, 'first_close': close_price, 'last_close': close_price}
-    else:
-        if date < data[key]['first_date']:
-            data[key]['first_date'] = date
-            data[key]['first_close'] = close_price
-        if date > data[key]['last_date']:
-            data[key]['last_date'] = date
-            data[key]['last_close'] = close_price
+# Lettura dei dati e organizzazione
+for row in sys.stdin:
+    stock_data = parse_row(row)
+    if stock_data['year'] >= 2000:
+        data[(stock_data['year'], stock_data['ticker'])]['close_prices'].append(
+            (stock_data['date'], stock_data['close']))
+        data[(stock_data['year'], stock_data['ticker'])]['name'] = stock_data['name']
 
-# Output the percentage change for each ticker and year
-for (ticker, year), values in data.items():
-    if values['first_close'] == 0:
-        continue  # Avoid division by zero
-    percentage_change = ((values['last_close'] - values['first_close']) / values['first_close']) * 100
-    print(f"{year}\t{ticker}:{percentage_change:.1f}%")
+# Ordinamento e calcolo della variazione percentuale
+for key in data:
+    # Ordina i prezzi di chiusura in base alla data
+    data[key]['close_prices'].sort(key=lambda x: x[0])
+    close_prices = [price for date, price in data[key]['close_prices']]
+
+    if len(close_prices) > 1:
+        start_price = close_prices[0]
+        end_price = close_prices[-1]
+        percentage_change = ((end_price - start_price) / start_price) * 100
+        print(f"{key[1]};{key[0]};{percentage_change:.2f};{data[key]['name']}")
+
