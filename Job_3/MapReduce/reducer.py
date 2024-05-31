@@ -2,60 +2,36 @@
 import sys
 from collections import defaultdict
 
-def read_input(file):
-    for line in file:
-        yield line.strip()
-
-
 trends = defaultdict(list)
+ticker_year_trends = defaultdict(dict)
 
+# Leggiamo l'input e organizziamo i dati
 for line in sys.stdin:
-    ticker, year, percentage_change, name = line.split(';')
+    ticker, year, percentage_change, name = line.strip().split('\t')
     year = int(year)
     percentage_change = float(percentage_change)
     trends[ticker].append((year, percentage_change, name))
-'''
-print("Trends dictionary:")
-for ticker in trends:
-    print(ticker, trends[ticker])
-'''
-trend_groups = defaultdict(set)
-tickers = list(trends.keys())
+    ticker_year_trends[ticker][year] = percentage_change
 
-for i in range(len(tickers)):
-    for j in range(i + 1, len(tickers)):
-        ticker1 = tickers[i]
-        ticker2 = tickers[j]
+# Mappa per raggruppare i ticker con gli stessi trend negli stessi anni
+pattern_groups = defaultdict(list)
 
-        # Troviamo gli anni comuni per entrambe le aziende
-        common_years = sorted(set(year for year, _, _ in trends[ticker1]) & set(year for year, _, _ in trends[ticker2]))
+# Processiamo i dati per ogni ticker una volta
+for ticker, years_data in ticker_year_trends.items():
+    sorted_years = sorted(years_data.keys())
 
-        # Verifichiamo se ci sono abbastanza anni comuni per confrontare i trend
-        if len(common_years) < 3:
-            continue
+    # Cerchiamo pattern di 3 anni consecutivi
+    for i in range(len(sorted_years) - 2):
+        year1, year2, year3 = sorted_years[i:i + 3]
+        if int(year3) - int(year1) == 2:  # Controlliamo che gli anni siano consecutivi
+            # Creiamo una chiave unica per il pattern di trend di 3 anni
+            # pattern_key = (years_data[year1], years_data[year2], years_data[year3])
+            pattern_groups_key = (year1, year2, year3, years_data[year1], years_data[year2], years_data[year3])
+            pattern_groups[pattern_groups_key].append(ticker)
 
-        # Confrontiamo i trend per tre anni consecutivi
-        for k in range(len(common_years) - 2):
-            years_slice = common_years[k:k+3]
-            #print(f"Years slice: {years_slice}")
+# A questo punto pattern_groups contiene gruppi di ticker che condividono lo stesso trend in 3 anni consecutivi
 
-            trend1 = [(year, trend) for year, trend, _ in trends[ticker1] if year in years_slice]
-            trend2 = [(year, trend) for year, trend, _ in trends[ticker2] if year in years_slice]
-
-            #print(f"Trends for {ticker1} in years {years_slice}: {trend1}")
-            #print(f"Trends for {ticker2} in years {years_slice}: {trend2}")
-
-            if len(trend1) == 3 and len(trend2) == 3 and trend1 == trend2:
-                trend_key = tuple((year, trend) for year, trend in trend1)
-                trend_groups[trend_key].add(trends[ticker1][0][2])  # Name of the first company
-                trend_groups[trend_key].add(trends[ticker2][0][2])  # Name of the second company
-                #print(f"Matching trend found: {trend_key} for companies: {trend_groups[trend_key]}")
-
-# Stampiamo i risultati
-#print("\nFinal output:")
-for trend_key, companies in trend_groups.items():
-    if len(companies) > 1:
-        formatted_data = [f"{year}:{change}%" for year, change in trend_key]
-        companies_str = ', '.join(companies)
-        trends_str = ', '.join(formatted_data)
-        print(f"{{ {companies_str} }}: {trends_str}")
+# Possiamo quindi confrontare i gruppi o stampare i risultati
+for (year1, year2, year3, p1, p2, p3), tickers in pattern_groups.items():
+    if len(tickers) > 1:
+        print(f"Tickers {tickers} share the same trend [{p1}, {p2}, {p3}] in years [{year1}, {year2}, {year3}]")
