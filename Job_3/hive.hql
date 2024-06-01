@@ -1,3 +1,5 @@
+DROP table sd1;
+
 -- Create Hive table if not exists
 CREATE TABLE IF NOT EXISTS sd1 (
     Unnamed_0 STRING,
@@ -16,7 +18,7 @@ FIELDS TERMINATED BY ',';
 
 
 -- Caricamento dei dati nella tabella (assumendo che i dati siano in un file chiamato stock_data.csv)
-LOAD DATA LOCAL INPATH '/home/marialaura/Desktop/BigData/progetto/Dataset/out_05.csv' INTO TABLE sd1;
+LOAD DATA LOCAL INPATH '/home/paleo/BigData/2Proj/Dataset/out_05.csv' INTO TABLE sd1;
 
 -- Filtraggio e preparazione dei dati dal 2000 in poi
 CREATE TEMPORARY TABLE filtered_stock_data AS
@@ -90,7 +92,7 @@ WHERE
     size(companies) > 1;
 
 
-INSERT OVERWRITE LOCAL DIRECTORY '/home/marialaura/Desktop/BigData/progetto/Dataset/Job3_hive'
+INSERT OVERWRITE LOCAL DIRECTORY '/home'
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY ','
 SELECT *
