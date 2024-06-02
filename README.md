@@ -18,13 +18,13 @@ The project was developed using several Big Data technologies:
 
 ## Implemented Applications
 
-### Statistics per Stock
+### Statistics per Stock (Job 1)
 A job that calculates annual statistics for each stock, including percentage change, minimum and maximum prices, and average volume.
 
-### Industry Report
+### Industry Report (Job 2)
 A job that generates an annual report for each industry, showing percentage change, the stock with the highest increase, and the stock with the highest transaction volume.
 
-### Company Trends
+### Company Trends (Job 3)
 A job that identifies groups of companies with similar annual variation trends for at least three consecutive years starting from 2000.
 
 ## Installation
